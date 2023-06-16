@@ -74,15 +74,28 @@ async function run() {
         });
 
         // selected class collection
+        app.get('/selectedClass', async (req, res) => {
+            const email = req.query.email;
+            if (!email) {
+                res.send([]);
+            }
+
+            // const decodedEmail = req.decoded.email;
+            // if (email !== decodedEmail) {
+            //     return res.status(403).send({ error: true, message: 'forbidden access' })
+            // }
+
+            const query = { email: email };
+            const result = await selectedClassCollection.find(query).toArray();
+            res.send(result);
+        });
 
         app.post('/selectedClass', async (req, res) => {
             const item = req.body;
             console.log(item)
             const result = await selectedClassCollection.insertOne(item);
             res.send(result);
-          })
-
-
+        })
 
 
         // Send a ping to confirm a successful connection
