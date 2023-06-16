@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -30,8 +31,19 @@ async function run() {
         const classesCollection = client.db('musicSchool').collection('classes');
         const selectedClassCollection = client.db('musicSchool').collection('selectedClass');
 
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+
+            res.send({ token })
+        })
 
         // users related data
+
+        app.get('/users', async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        });
         app.post('/users', async (req, res) => {
             const user = req.body;
             const query = { email: user.email }
@@ -42,6 +54,78 @@ async function run() {
 
             const result = await usersCollection.insertOne(user);
             res.send(result);
+        });
+
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            };
+
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        })
+
+        app.patch('/users/instructor/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'instructor'
+                },
+            };
+
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        })
+
+        //   delete user
+
+        app.delete('/users/:id', async (req, res) => {
+            const classId = req.params.id;
+            console.log(classId);
+
+            try {
+                // Find and delete the selected class by its ID
+                const result = await usersCollection.deleteOne({ _id: new ObjectId(classId) });
+
+                if (result.deletedCount === 1) {
+                    res.sendStatus(200);
+                } else {
+                    res.sendStatus(404);
+                }
+            } catch (error) {
+                console.error('Error deleting class:', error);
+                res.sendStatus(500);
+            }
+        });
+
+        app.delete('/users/:id', async (req, res) => {
+            const userId = req.params.id;
+
+            try {
+                // Find the user by ID
+                const user = await usersCollection.findById(userId);
+
+                if (!user) {
+                    return res.status(404).json({ message: 'User not found' });
+                }
+
+                // Delete the user
+                await user.remove();
+
+                res.json({ message: 'User deleted successfully', deletedCount: 1 });
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
         });
 
         //   get all the instructor data from database
