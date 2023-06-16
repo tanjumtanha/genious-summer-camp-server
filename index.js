@@ -25,9 +25,24 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         //await client.connect();
 
+        const usersCollection = client.db('musicSchool').collection('users');
         const instructorCollection = client.db('musicSchool').collection('instructors');
         const classesCollection = client.db('musicSchool').collection('classes');
         const selectedClassCollection = client.db('musicSchool').collection('selectedClass');
+
+
+        // users related data
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email }
+            const existingUser = await usersCollection.findOne(query);
+            if (existingUser) {
+                return res.send({ message: 'user already exists' })
+            }
+
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        });
 
         //   get all the instructor data from database
         app.get("/allInstructor", async (req, res) => {
