@@ -97,6 +97,27 @@ async function run() {
             res.send(result);
         })
 
+        // Delete
+        app.delete('/selectedClass/:classId', async (req, res) => {
+            const classId = req.params.classId;
+            console.log(classId);
+
+            try {
+                // Find and delete the selected class by its ID
+                const result = await selectedClassCollection.deleteOne({ _id: new ObjectId(classId) });
+
+                if (result.deletedCount === 1) {
+                    res.sendStatus(200);
+                } else {
+                    res.sendStatus(404);
+                }
+            } catch (error) {
+                console.error('Error deleting class:', error);
+                res.sendStatus(500);
+            }
+        });
+
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
