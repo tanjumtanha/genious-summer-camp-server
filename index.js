@@ -27,6 +27,7 @@ async function run() {
 
         const instructorCollection = client.db('musicSchool').collection('instructors');
         const classesCollection = client.db('musicSchool').collection('classes');
+        const selectedClassCollection = client.db('musicSchool').collection('selectedClass');
 
         //   get all the instructor data from database
         app.get("/allInstructor", async (req, res) => {
@@ -71,6 +72,15 @@ async function run() {
                 res.status(500).json({ error: 'Internal Server Error' });
             }
         });
+
+        // selected class collection
+
+        app.post('/selectedClass', async (req, res) => {
+            const item = req.body;
+            console.log(item)
+            const result = await selectedClassCollection.insertOne(item);
+            res.send(result);
+          })
 
 
 
