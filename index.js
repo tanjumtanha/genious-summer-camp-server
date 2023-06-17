@@ -328,11 +328,25 @@ async function run() {
             const payment = req.body;
             const insertResult = await paymentCollection.insertOne(payment);
 
-            const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-            const deleteResult = await selectedClassCollection.deleteMany(query)
+            const itemId = payment.cartItems[0];
+            const query = { _id: new ObjectId(itemId) };
+            const deleteResult = await selectedClassCollection.deleteOne(query);
 
             res.send({ insertResult, deleteResult });
-        })
+        });
+
+        app.get("/payment-history", verifyJWT, async (req, res) => {
+            try {
+                const result = await paymentCollection
+                    .find()
+                    .sort({ paymentDate: -1 }) // Sort by paymentDate in descending order
+                    .toArray();
+
+                res.send(result);
+            } catch (error) {
+                res.status(500).json({ error: "An error occurred while fetching payment history" });
+            }
+        });
 
 
 
