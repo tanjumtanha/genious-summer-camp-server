@@ -79,7 +79,7 @@ async function run() {
 
         // users related data
 
-        app.get('/users', verifyJWT,verifyAdmin, async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -112,7 +112,6 @@ async function run() {
 
         app.patch('/users/instructor/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id);
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
@@ -227,9 +226,25 @@ async function run() {
         // post data in class field
         app.post("/allClass", verifyJWT, verifyInstructor, async (req, res) => {
             const newItem = req.body;
-            const result = await classesCollection.insertOne(newItem)
+            newItem.status = "pending";
+
+            const result = await classesCollection.insertOne(newItem);
             res.send(result);
-          })
+        });
+
+        app.patch('/allClass/approve/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: 'approved'
+                },
+            };
+
+            const result = await classesCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
 
         // get top 6 class
         app.get('/topClass', async (req, res) => {
