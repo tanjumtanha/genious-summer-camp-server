@@ -3,6 +3,7 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -46,6 +47,7 @@ async function run() {
         const instructorCollection = client.db('musicSchool').collection('instructors');
         const classesCollection = client.db('musicSchool').collection('classes');
         const selectedClassCollection = client.db('musicSchool').collection('selectedClass');
+        const paymentCollection = client.db('musicSchool').collection('payments');
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -232,7 +234,7 @@ async function run() {
             res.send(result);
         });
 
-        app.patch('/allClass/approve/:id', async (req, res) => {
+        app.patch('/allClass/approve/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
@@ -305,6 +307,32 @@ async function run() {
                 res.sendStatus(500);
             }
         });
+
+        // Payment
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
+
+        // payment related api
+        app.post('/payments', verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const insertResult = await paymentCollection.insertOne(payment);
+
+            const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+            const deleteResult = await selectedClassCollection.deleteMany(query)
+
+            res.send({ insertResult, deleteResult });
+        })
 
 
 
